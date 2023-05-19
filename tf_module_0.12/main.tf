@@ -40,6 +40,6 @@ resource "aws_lambda_function" "papertrail" {
     # because Terraform downloads this module to folder with a random string.
     # However, this causes problems when deploying the Lambda in some situatons,
     # so at the moment we cannot add it.
-    ignore_changes = [last_modified]
+    ignore_changes = []
   }
 }

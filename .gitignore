@@ -1,1 +1,4 @@
 /node_modules
+.terraform
+lambda-files
+.terraform.lock.hcl
