@@ -99,7 +99,10 @@ export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, cont
               const logLevel = (parsed_message.level || "info").toLowerCase();
               const location = parsed_message.location || "unknown_location";
               const user_id = (parsed_message.user || { id: "unknown_user" }).id || "unknown_user";
-              logger.log(logLevel, `[user_id: ${user_id}] [location: ${location}] ${parsed_message.message}`);
+              logger.log(
+                logLevel,
+                JSON.stringify({ user_id: user_id, location: location, message: parsed_message.message })
+              );
             } else {
               logger.log("info", event.message);
             }
