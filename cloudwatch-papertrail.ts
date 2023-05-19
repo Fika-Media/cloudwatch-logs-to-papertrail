@@ -61,11 +61,7 @@ export function parseLogLevel(tsvMessage: string): string | null {
   return match && match[1].toUpperCase();
 }
 
-export const handler: AwsLambda.Handler = (
-  event: CloudwatchLogGroupsEvent,
-  context,
-  callback
-) => {
+export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, context, callback) => {
   const host = getEnvVarOrFail("PAPERTRAIL_HOST");
   const port = getEnvVarOrFail("PAPERTRAIL_PORT");
   const shouldParseLogLevels = getEnvVarOrFail("PARSE_LOG_LEVELS") === "true";
@@ -73,9 +69,6 @@ export const handler: AwsLambda.Handler = (
 
   unarchiveLogData(payload)
     .then((logData: LogData) => {
-      console.log("Got log data");
-      console.log(logData);
-
       const papertrailTransport = new winston.transports.Papertrail({
         host,
         port,
@@ -88,15 +81,31 @@ export const handler: AwsLambda.Handler = (
       const logger = new winston.Logger({
         transports: [papertrailTransport],
       });
+      logger.on("error", (err) => {
+        console.log("Error sending logs to papertrail: " + err);
+      });
 
       logData.logEvents.forEach(function (event) {
-        const logData = JSON.parse(event.message);
-        if (logData.message) {
-          const logLevel = logData.level || "INFO";
-          const location = logData.location || "unknown_location";
-          const user_id =
-            (logData.user || { id: "unknown_user" }).id || "unknown_user";
-          logger.log(logLevel, `[${location}] [${user_id}] ${logData.message}`);
+        try {
+          if (
+            !event.message.startsWith("START RequestId") &&
+            !event.message.startsWith("END RequestId") &&
+            !event.message.startsWith("REPORT RequestId") &&
+            !event.message.startsWith('{"_aws"') &&
+            !event.message.startsWith("[NR_EXT]")
+          ) {
+            const parsed_message = JSON.parse(event.message);
+            if (parsed_message.message) {
+              const logLevel = (parsed_message.level || "info").toLowerCase();
+              const location = parsed_message.location || "unknown_location";
+              const user_id = (parsed_message.user || { id: "unknown_user" }).id || "unknown_user";
+              logger.log(logLevel, `[user_id: ${user_id}] [location: ${location}] ${parsed_message.message}`);
+            } else {
+              logger.log("info", event.message);
+            }
+          }
+        } catch (e) {
+          console.log(`Error ${e} parsing message: ${event.message}`);
         }
       });
 
