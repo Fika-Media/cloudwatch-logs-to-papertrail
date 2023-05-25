@@ -2,3 +2,4 @@
 .terraform
 lambda-files
 .terraform.lock.hcl
+.idea/
