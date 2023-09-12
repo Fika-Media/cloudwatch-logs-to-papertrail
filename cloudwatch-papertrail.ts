@@ -92,10 +92,16 @@ export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, cont
             !event.message.startsWith("END RequestId") &&
             !event.message.startsWith("REPORT RequestId") &&
             !event.message.startsWith('{"_aws"') &&
-            !event.message.startsWith("[NR_EXT]")
+            !event.message.startsWith("[NR_EXT]") &&
+            !event.message.includes("Name: newrelic-lambda-extension\tState:")
           ) {
-            const parsed_message = JSON.parse(event.message);
-            if (parsed_message.message) {
+            let parsed_message
+            try {
+              parsed_message = JSON.parse(event.message);
+            } catch (e) {
+              parsed_message = null
+            }
+            if (parsed_message !== null && parsed_message.message) {
               let logLevel = (parsed_message.level || "info").toLowerCase();
               if (logLevel === "warning") {
                 logLevel = "warn";
