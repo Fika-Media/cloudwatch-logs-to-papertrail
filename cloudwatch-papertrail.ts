@@ -119,7 +119,7 @@ export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, cont
                 message: parsed_message.message,
               };
               if (event.exception !== null){
-                logPayload.exception = event.exception;
+                logPayload.exception = parsed_message.exception;
               }
               logger.log(
                 logLevel,
