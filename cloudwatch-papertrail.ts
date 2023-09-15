@@ -27,6 +27,7 @@ interface LogMessage {
   id: string;
   timestamp: number;
   message: string;
+  exception?: string;
 }
 
 interface LogData {
@@ -107,18 +108,21 @@ export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, cont
                 logLevel = "warn";
               }
               const location = parsed_message.location || "unknown_location";
-              const user_id = (parsed_message.user || { user_id: "unknown_user" }).user_id;
-              const entitlement = (parsed_message.user || { entitlement: "unknown_entitlement" }).entitlement;
+              const user_id = (parsed_message.user || {user_id: "unknown_user"}).user_id;
+              const entitlement = (parsed_message.user || {entitlement: "unknown_entitlement"}).entitlement;
+              const logPayload: Record<string, any> = {
+                user_id: user_id,
+                article_id: parsed_message.article_id,
+                entitlement: entitlement,
+                location: location,
+                message: parsed_message.message,
+              };
+              if (event.exception !== null){
+                logPayload.exception = event.exception;
+              }
               logger.log(
                 logLevel,
-                JSON.stringify(
-                  { 
-                    user_id: user_id, 
-                    article_id: parsed_message.article_id, 
-                    entitlement: entitlement,
-                    location: location, 
-                    message: parsed_message.message }
-                )
+                JSON.stringify(logPayload)
               );
             } else {
               logger.log("info", event.message);
