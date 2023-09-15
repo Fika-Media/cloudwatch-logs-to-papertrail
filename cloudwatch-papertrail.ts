@@ -24,6 +24,7 @@ interface CloudwatchLogGroupsEvent {
 }
 
 interface LogMessage {
+  level?: string;
   id: string;
   timestamp: number;
   message: string;
@@ -125,7 +126,15 @@ export const handler: AwsLambda.Handler = (event: CloudwatchLogGroupsEvent, cont
                 JSON.stringify(logPayload)
               );
             } else {
-              logger.log("info", event.message);
+              let message = event.message || "";
+              if (event.exception !== null){
+                message += event.exception;
+              }
+              let logLevel = (event.level || "info").toLowerCase();
+              if (logLevel === "warning") {
+                logLevel = "warn";
+              }
+              logger.log(logLevel, message);
             }
           }
         } catch (e) {
